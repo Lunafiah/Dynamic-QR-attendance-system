@@ -17,8 +17,8 @@ lint = true
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
 resolve_s3 = true
-stack_name = "qr-attendance"
-s3_prefix = "qr-attendance"
+stack_name = "qr-attendance-backend-dev"
+s3_prefix = "qr-attendance-backend-dev"
 image_repositories = []
 
 [default.package.parameters]

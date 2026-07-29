@@ -28,47 +28,39 @@ API Gateway Event
 | **Repository**     | `repositories/`  | Thực thi DynamoDB / Cognito commands. Giấu hoàn toàn chi tiết kỹ thuật của AWS SDK khỏi tầng trên           |
 | **Shared**         | `shared/`        | Các tiện ích dùng chung: `errors.ts`, `response.ts`, `permissions.ts`, `logger.ts`, `models.ts`, `schemas.ts` |
 
-## 2. Cấu trúc thư mục `src/`
+## 2. Cấu trúc thư mục (Directory Structure)
+
+Dự án được tổ chức theo mô hình Monorepo, bao gồm cả Frontend, Backend và các script hỗ trợ.
 
 ```
-src/
-├── indexes/         # Entry point của mỗi Lambda Function
-│   ├── authIndex.ts
-│   ├── sessionIndex.ts
-│   ├── qrGeneratorIndex.ts
-│   ├── checkinIndex.ts
-│   ├── reportIndex.ts
-│   └── adminIndex.ts
+qr-attendance/
+├── backend/         # Mã nguồn Backend (AWS SAM, Node.js, TypeScript)
+│   ├── samconfig.toml     # Cấu hình deploy cho SAM CLI
+│   ├── template.yaml      # Định nghĩa CloudFormation resources (IaC)
+│   └── src/               # Thư mục chứa code logic chính
+│       ├── indexes/       # Entry point của Lambda
+│       │   ├── adminIndex, authIndex, checkinIndex, courseIndex, qrGeneratorIndex, reportIndex, sessionIndex
+│       ├── handlers/      # Request/Response layer (Controller)
+│       │   ├── adminHandler, authHandler, checkinHandler, courseHandler, qrGeneratorHandler, reportHandler, sessionHandler
+│       ├── services/      # Business Logic layer
+│       │   ├── adminService, authService, checkinService, courseService, qrGeneratorService, reportService, sessionService
+│       ├── repositories/  # Data Access layer (DynamoDB / Cognito)
+│       │   ├── checkinRepository, courseRepository, qrGeneratorRepository, reportRepository, sessionRepository
+│       └── shared/        # Các tiện ích dùng chung
+│           ├── errors.ts, logger.ts, models.ts, permissions.ts, response.ts, schemas.ts
 │
-├── handlers/        # Request/Response layer (tương đương Controller)
-│   ├── authHandler.ts
-│   ├── sessionHandler.ts
-│   ├── qrGeneratorHandler.ts
-│   ├── checkinHandler.ts
-│   ├── reportHandler.ts
-│   └── adminHandler.ts
+├── frontend/        # Mã nguồn Frontend (React, Vite, Tailwind CSS)
+│   ├── src/
+│   │   ├── components/    # Reusable UI components
+│   │   ├── pages/         # Các trang (Dashboard, Login, Scan...)
+│   │   └── api/           # Gọi API đến Backend
+│   ├── package.json
+│   └── vite.config.ts
 │
-├── services/        # Business Logic layer
-│   ├── authService.ts
-│   ├── sessionService.ts
-│   ├── qrGeneratorService.ts
-│   ├── checkinService.ts
-│   ├── reportService.ts
-│   └── adminService.ts
+├── scripts/         # Các script hỗ trợ tự động hoá
+│   └── create_admin.sh    # Script tự động lấy config AWS và tạo tài khoản Admin
 │
-├── repositories/    # Data Access layer
-│   ├── sessionRepository.ts
-│   ├── qrGeneratorRepository.ts
-│   ├── checkinRepository.ts
-│   └── reportRepository.ts
-│
-└── shared/          # Dùng chung toàn dự án
-    ├── errors.ts    # AppError, NotFoundError, ForbiddenError, ConflictError... + errorHandler
-    ├── response.ts  # Responses.success(), Responses.notFound()...
-    ├── permissions.ts # getTeacherId(), getStudentId(), requireAdmin()
-    ├── logger.ts    # Logger.info(), Logger.error()
-    ├── models.ts    # TypeScript interfaces & enums (SessionItem, SessionStatus...)
-    └── schemas.ts   # Zod validation schemas (CreateSessionBodySchema...)
+└── docs/            # Tài liệu kiến trúc và hướng dẫn (OVERVIEW, ARCHITECTURE)
 ```
 
 ## 3. Kiến trúc triển khai trên AWS

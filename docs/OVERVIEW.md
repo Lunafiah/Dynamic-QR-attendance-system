@@ -1,12 +1,12 @@
-# Tổng quan (Overview) — Smart QR Attendance
+# Tổng quan BK-Sync
 
 ## 1. Giới thiệu
 
-Tài liệu này đặc tả các yêu cầu phần mềm cho hệ thống **Smart QR Attendance**. Hệ thống sử dụng QR Code động để giải quyết bài toán điểm danh tự động, nhanh chóng và chống gian lận.
+Tài liệu này đặc tả các yêu cầu phần mềm cho hệ thống **BK-Sync**. Hệ thống sử dụng QR Code động để giải quyết bài toán điểm danh tự động, nhanh chóng và chống gian lận.
 
 ### 1.1 Vấn đề cốt lõi
 
-QR Code tĩnh (in ra giấy) rất dễ bị gian lận — sinh viên chụp ảnh rồi chuyển cho bạn khác điểm danh hộ.
+QR Code tĩnh (in ra giấy) rất dễ bị gian lận — sinh viên chụp QR Code rồi chuyển cho người khác điểm danh hộ.
 Hệ thống này giải quyết bài toán đó bằng **QR Code động** — token thay đổi mỗi 30–60 giây và chỉ dùng được **1 lần duy nhất**.
 
 ## 2. Đối tượng sử dụng (Stakeholders)

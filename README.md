@@ -1,210 +1,86 @@
-# Smart QR Attendance — Developer Guide
+# BK-Sync - Hệ thống điểm danh thông minh bằng QR Code
 
-Hệ thống điểm danh bằng QR Code động xây dựng trên AWS Serverless.  
-
----
-
-## Tech Stack
-
-| Layer                | Công nghệ                              |
-| -------------------- | -------------------------------------- |
-| **IaC / Deploy**     | AWS SAM (Serverless Application Model) |
-| **Runtime**          | Node.js 20.x, TypeScript               |
-| **API**              | Amazon API Gateway (HTTP API)          |
-| **Business Logic**   | AWS Lambda                             |
-| **Database**         | Amazon DynamoDB                        |
-| **Auth**             | Amazon Cognito                         |
-| **Frontend Hosting** | AWS Amplify Hosting                    |
-| **Logging**          | Amazon CloudWatch                      |
+Hệ thống điểm danh bằng QR Code động (chống điểm danh hộ) xây dựng trên kiến trúc AWS Serverless.
 
 ---
 
-## Prerequisites
+## 1. Công nghệ sử dụng (Tech Stack)
 
-Cách cài AWS SAM: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html
+- **Backend:** AWS SAM, Node.js (TypeScript), AWS Lambda, API Gateway, DynamoDB.
+- **Frontend:** React (Vite), Tailwind CSS.
+- **Auth & CI/CD:** Amazon Cognito, AWS Amplify Hosting.
 
-Kiểm tra sự tồn tại của các công cụ sau trước khi bắt đầu:
+---
+
+## 2. Chuẩn bị (Prerequisites)
+
+Hãy đảm bảo máy tính của bạn đã cài đặt sẵn các công cụ sau:
+- Node.js (v20+)
+- Git
+- AWS CLI (đã cấu hình `aws configure` với IAM User có đủ quyền deploy)
+- AWS SAM CLI (`sam --version`)
+
+---
+
+## 3. Triển khai Backend (AWS SAM)
+
+Khởi động Terminal và trỏ vào thư mục `backend`:
 
 ```bash
-# 1. Node.js 20+
-node --version  # >= 20.0.0
-
-# 2. AWS CLI (đã cấu hình credentials)
-aws --version
-aws configure   # nhập Access Key, Secret Key, Region
-
-# 3. AWS SAM CLI
-sam --version   # >= 1.100.0
-
-# 4. TypeScript (global, tuỳ chọn)
-npm install -g typescript
-```
-
----
-
-## Cài đặt dự án
-
-```bash
-# Clone repo
-git clone <repo-url>
-cd serverless-qr-attendance
 cd backend
-
-# Cài dependencies
 npm install
-```
-
----
-
-## Cấu trúc thư mục
-
-```
-serverless-qr-attendance/
-├── backend/
-│   ├── template.yaml            # SAM template: định nghĩa toàn bộ AWS resources
-│   ├── samconfig.toml           # Cấu hình deploy mặc định (stack name, region, ...)
-│   ├── package.json
-│   │
-│   ├── src/
-│   └── tests/                   # Unit tests
-│
-├── docs/                        # Tài liệu dự án
-└── README.md                    # File này
-```
-
----
-
-## NPM Libraries
-
-### Runtime Dependencies
-
-| Package                                     | Version | Mục đích                                            |
-| ------------------------------------------- | ------- | --------------------------------------------------- |
-| `@aws-sdk/client-dynamodb`                  | ^3      | Kết nối DynamoDB                                    |
-| `@aws-sdk/lib-dynamodb`                     | ^3      | DynamoDB Document Client (type-safe hơn)            |
-| `@aws-sdk/client-cognito-identity-provider` | ^3      | Gọi Cognito Admin API (λ Admin)                     |
-| `@aws-sdk/client-secrets-manager`           | ^3      | Đọc HMAC secret key                                 |
-| `uuid`                                      | ^9      | Tạo `sessionId` dạng UUID v4                        |
-| `zod`                                       | ^3      | Validate request body (type-safe schema validation) |
-
-### Dev Dependencies
-
-| Package             | Version | Mục đích                                     |
-| ------------------- | ------- | -------------------------------------------- |
-| `typescript`        | ^5      | Compiler                                     |
-| `@types/aws-lambda` | ^8      | Type definitions cho Lambda event/context    |
-| `@types/node`       | ^20     | Type definitions cho Node.js built-ins       |
-| `@types/uuid`       | ^9      | Types cho uuid                               |
-| `esbuild`           | ^0      | Bundler nhanh cho TypeScript → JS (SAM dùng) |
-| `jest`              | ^29     | Test runner                                  |
-| `ts-jest`           | ^29     | Chạy TypeScript trong Jest                   |
-| `@types/jest`       | ^29     | Types cho Jest                               |
-
-> **Lưu ý:** `crypto` là built-in của Node.js, không cần cài thêm. Dùng để tạo HMAC token.
-
----
-
-## Development Workflow
-
-### Chạy local với SAM
-
-```bash
-# Build (compile TypeScript → JS, package Lambda)
-sam build
-
-# Khởi động API local (giả lập API Gateway + Lambda)
-sam local start-api
-
-# Gọi thử một Lambda function cụ thể
-sam local invoke SessionFunction --event events/create-session.json
-```
-
-### Chạy tests
-
-```bash
-# Chạy toàn bộ unit tests
-npm test
-
-# Chạy test với coverage
-npm run test:coverage
-
-# Watch mode khi dev
-npm run test:watch
-```
-
-### Linting & Type check
-
-```bash
-npm run lint       # ESLint
-npm run typecheck  # tsc --noEmit
-```
-
----
-
-## Build & Deploy
-
-### Lần đầu deploy
-
-```bash
-# Build + deploy với hướng dẫn tương tác
 sam build
 sam deploy --guided
-
-# SAM sẽ hỏi: stack name, region, S3 bucket, xác nhận changeset
-# Sau đó lưu vào samconfig.toml để deploy lần sau không cần --guided
 ```
 
-### Deploy cập nhật
+Khi được hỏi, hãy điền các thông số cơ bản:
+- **Stack Name**: `qr-attendance-backend-dev`
+- **AWS Region**: `ap-southeast-1`
+- Các mục khác: Chọn `y` hoặc nhấn `Enter` để dùng mặc định.
 
-```bash
-sam build && sam deploy
-```
-
-### Xóa stack
-
-```bash
-sam delete --stack-name smart-qr-attendance
-```
+**Lưu ý quan trọng:** Sau khi deploy thành công, hãy copy lại 3 giá trị ở bảng Outputs: `ApiEndpoint`, `UserPoolId`, `UserPoolClientId`.
 
 ---
 
-## Environment Variables (Lambda)
+## 4. Khởi tạo Tài khoản Admin
 
-Lưu ý: Phần này chưa kiểm chứng
+Chạy script có sẵn để tự động tạo tài khoản Admin phục vụ cho việc tạo lớp học sau này:
 
-Tất cả env vars được inject qua `template.yaml`, không hard-code trong code:
+```bash
+cd ../scripts
+chmod +x create_admin.sh
+./create_admin.sh
+```
 
-| Biến                    | Giá trị                          | Nguồn         |
-| ----------------------- | -------------------------------- | ------------- |
-| `SESSION_TABLE_NAME`    | Tên DynamoDB table Sessions      | SAM `!Ref`    |
-| `QR_TOKENS_TABLE_NAME`  | Tên DynamoDB table QrTokens      | SAM `!Ref`    |
-| `ATTENDANCE_TABLE_NAME` | Tên DynamoDB table Attendance    | SAM `!Ref`    |
-| `COGNITO_USER_POOL_ID`  | ID của Cognito User Pool         | SAM `!Ref`    |
-| `HMAC_SECRET_NAME`      | Tên secret trong Secrets Manager | SAM parameter |
+Làm theo hướng dẫn trên màn hình để nhập Email, Password và Họ tên.
 
 ---
 
-## Khởi tạo Admin Account
+## 5. Triển khai Frontend (AWS Amplify)
 
-Hệ thống không cho phép tự đăng ký làm Admin. Để có tài khoản test các chức năng Admin, hãy làm theo 2 bước:
-1. Đăng ký 1 tài khoản bình thường (Student) qua giao diện Frontend hoặc Postman.
-2. Dùng AWS CLI chạy lệnh sau để nhét user đó vào nhóm ADMIN (Nhớ thay các tham số):
+1. Tạo một repository mới trên GitHub cá nhân của bạn và push toàn bộ mã nguồn này lên đó.
+2. Truy cập **AWS Amplify** trên giao diện Web Console -> **Create new app** -> Chọn **GitHub**.
+3. Chọn repository và nhánh `main`. 
+4. Tích chọn **Connecting a monorepo? Pick a folder** và nhập `frontend`.
+5. Mở rộng phần **Advanced settings**, thêm 3 biến môi trường (Environment variables) lấy từ bước 3:
+   - `VITE_API_ENDPOINT`
+   - `VITE_USER_POOL_ID`
+   - `VITE_USER_POOL_CLIENT_ID`
+6. Bấm **Save and deploy**. Quá trình build mất khoảng 2 phút và bạn sẽ nhận được link truy cập ứng dụng.
+
+---
+
+## 6. Dọn dẹp hệ thống (Cleanup)
+
+Để không bị AWS tính phí khi không sử dụng:
+1. Xoá Frontend: Lên giao diện **AWS Amplify** -> App settings -> **Delete app**.
+2. Xoá Backend: Mở Terminal ở thư mục `backend` và chạy lệnh:
    ```bash
-   aws cognito-idp admin-add-user-to-group \
-     --user-pool-id <VITE_USER_POOL_ID> \
-     --username <EMAIL_DA_DANG_KY> \
-     --group-name ADMIN
-
-   aws cognito-idp admin-update-user-attributes \
-     --user-pool-id <VITE_USER_POOL_ID> \
-     --username <EMAIL_DA_DANG_KY> \
-     --user-attributes Name=custom:role,Value=ADMIN
+   sam delete
    ```
 
----
+## 7. Test
 
-## Tài liệu tham khảo
+Link web: https://main.d135ukmg55jufb.amplifyapp.com/
 
-- [AWS SAM Documentation](https://docs.aws.amazon.com/serverless-application-model/)
-- [AWS SDK for JavaScript v3](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/)
-- [DynamoDB Developer Guide](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/)
+Tài khoản Admin: admin@demo.com / Password123! 
