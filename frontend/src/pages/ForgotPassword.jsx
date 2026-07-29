@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { getAuthErrorMessage, getPasswordError, PASSWORD_HINT } from "../utils/authHelpers";
 
 export default function ForgotPassword() {
   const { forgotPassword, confirmForgotPassword } = useAuth();
@@ -21,18 +22,20 @@ export default function ForgotPassword() {
     setError(null);
     setSuccess(null);
 
-    if (!email) {
+    if (!email.trim()) {
       setError("Vui lòng nhập email");
       return;
     }
 
     setSubmitting(true);
     try {
-      await forgotPassword(email);
+      const cleanEmail = email.trim();
+      await forgotPassword(cleanEmail);
+      setEmail(cleanEmail);
       setSuccess("Mã xác thực đã được gửi đến email của bạn.");
       setStep("confirm");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Có lỗi xảy ra");
+      setError(getAuthErrorMessage(err, "Có lỗi xảy ra"));
     } finally {
       setSubmitting(false);
     }
@@ -43,8 +46,14 @@ export default function ForgotPassword() {
     setError(null);
     setSuccess(null);
 
-    if (!code) {
+    if (!code.trim()) {
       setError("Vui lòng nhập mã xác thực");
+      return;
+    }
+
+    const passwordError = getPasswordError(newPassword);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
 
@@ -52,19 +61,14 @@ export default function ForgotPassword() {
       setError("Mật khẩu xác nhận không khớp");
       return;
     }
-    
-    if (newPassword.length < 6) {
-      setError("Mật khẩu tối thiểu 6 ký tự");
-      return;
-    }
 
     setSubmitting(true);
     try {
-      await confirmForgotPassword({ email, code, newPassword });
+      await confirmForgotPassword({ email, code: code.trim(), newPassword });
       setSuccess("Đổi mật khẩu thành công! Đang chuyển hướng...");
       setTimeout(() => navigate("/login", { replace: true }), 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Mã xác thực không đúng hoặc đã hết hạn");
+      setError(getAuthErrorMessage(err, "Mã xác thực không đúng hoặc đã hết hạn"));
     } finally {
       setSubmitting(false);
     }
@@ -72,9 +76,9 @@ export default function ForgotPassword() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+      <div className="w-full max-w-md animate-fade-up rounded-3xl border border-white bg-white/80 p-8 shadow-[var(--shadow-card)] backdrop-blur-xl transition-all duration-500 hover:shadow-[var(--shadow-premium)]">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-slate-800">
+          <h1 className="text-2xl font-display font-bold text-slate-800">
             {step === "request" ? "Quên mật khẩu" : "Đặt lại mật khẩu"}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -98,11 +102,13 @@ export default function ForgotPassword() {
         {step === "request" ? (
           <form onSubmit={handleRequestSubmit} className="space-y-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label htmlFor="forgot-email" className="mb-1 block text-sm font-medium text-slate-700">
                 Email đã đăng ký
               </label>
               <input
+                id="forgot-email"
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -114,7 +120,7 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-lg bg-indigo-600 py-2.5 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-lg bg-gradient-to-r from-indigo-500 to-violet-600 py-2.5 font-semibold text-white transition-all hover:from-indigo-600 hover:to-violet-700 hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)] focus:ring-4 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
               {submitting ? "Đang gửi..." : "Nhận mã xác thực"}
             </button>
@@ -128,11 +134,14 @@ export default function ForgotPassword() {
         ) : (
           <form onSubmit={handleConfirmSubmit} className="space-y-4">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label htmlFor="forgot-otp" className="mb-1 block text-sm font-medium text-slate-700">
                 Mã xác thực (OTP)
               </label>
               <input
+                id="forgot-otp"
                 type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
                 required
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
@@ -142,25 +151,30 @@ export default function ForgotPassword() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label htmlFor="forgot-new-password" className="mb-1 block text-sm font-medium text-slate-700">
                 Mật khẩu mới
               </label>
               <input
+                id="forgot-new-password"
                 type="password"
+                autoComplete="new-password"
                 required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
               />
+              <p className="mt-1 text-xs text-slate-400">{PASSWORD_HINT}</p>
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
+              <label htmlFor="forgot-confirm-password" className="mb-1 block text-sm font-medium text-slate-700">
                 Xác nhận mật khẩu mới
               </label>
               <input
+                id="forgot-confirm-password"
                 type="password"
+                autoComplete="new-password"
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -172,16 +186,23 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-lg bg-indigo-600 py-2.5 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-lg bg-gradient-to-r from-indigo-500 to-violet-600 py-2.5 font-semibold text-white transition-all hover:from-indigo-600 hover:to-violet-700 hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)] focus:ring-4 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
               {submitting ? "Đang xử lý..." : "Đổi mật khẩu"}
             </button>
             <button
               type="button"
-              onClick={() => setStep("request")}
-              className="mt-2 w-full rounded-lg bg-slate-100 py-2.5 font-semibold text-slate-600 transition hover:bg-slate-200"
+              onClick={() => {
+                setStep("request");
+                setCode("");
+                setNewPassword("");
+                setConfirmPassword("");
+                setError(null);
+                setSuccess(null);
+              }}
+              className="w-full rounded-lg bg-slate-100 py-2.5 font-semibold text-slate-600 transition hover:bg-slate-200"
             >
-              Gửi lại email
+              Quay lại
             </button>
           </form>
         )}
