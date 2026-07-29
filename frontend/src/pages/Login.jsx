@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { resendSignUpCode } from "aws-amplify/auth";
+import { getAuthErrorMessage } from "../utils/authHelpers";
 
 export default function Login() {
   const { login } = useAuth();
@@ -18,22 +19,23 @@ export default function Login() {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
+    const cleanEmail = email.trim();
     try {
-      const res = await login({ email, password });
+      const res = await login({ email: cleanEmail, password });
       if (res?.nextStep === "CONFIRM_SIGN_UP") {
-        await resendSignUpCode({ username: email });
-        navigate("/register", { 
-          state: { 
-            step: "confirm", 
-            email,
-            message: "Tài khoản chưa được xác thực. Mã xác thực mới đã được gửi đến email của bạn." 
-          } 
+        await resendSignUpCode({ username: cleanEmail });
+        navigate("/register", {
+          state: {
+            step: "confirm",
+            email: cleanEmail,
+            message: "Tài khoản chưa được xác thực. Mã xác thực mới đã được gửi đến email của bạn.",
+          },
         });
         return;
       }
       navigate(from ?? "/", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Đăng nhập thất bại");
+      setError(getAuthErrorMessage(err, "Đăng nhập thất bại"));
     } finally {
       setSubmitting(false);
     }
@@ -41,7 +43,7 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+      <div className="w-full max-w-md animate-fade-up rounded-3xl border border-white bg-white/80 p-8 shadow-[var(--shadow-card)] backdrop-blur-xl transition-all duration-500 hover:shadow-[var(--shadow-premium)]">
         <div className="mb-8 text-center">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white mb-4 shadow-lg shadow-blue-500/20 p-2 border border-slate-100">
             <img src="/attend.svg" alt="BK-Check Logo" className="h-full w-full object-contain" />
@@ -63,11 +65,13 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">
+            <label htmlFor="login-email" className="mb-1 block text-sm font-medium text-slate-700">
               Email
             </label>
             <input
+              id="login-email"
               type="email"
+              autoComplete="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -78,7 +82,7 @@ export default function Login() {
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-slate-700">
+              <label htmlFor="login-password" className="block text-sm font-medium text-slate-700">
                 Mật khẩu
               </label>
               <Link
@@ -89,7 +93,9 @@ export default function Login() {
               </Link>
             </div>
             <input
+              id="login-password"
               type="password"
+              autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -101,7 +107,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-indigo-600 py-2.5 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg bg-gradient-to-r from-indigo-500 to-violet-600 py-2.5 font-semibold text-white transition-all hover:from-indigo-600 hover:to-violet-700 hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)] focus:ring-4 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
           >
             {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
