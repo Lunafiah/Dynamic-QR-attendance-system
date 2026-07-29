@@ -5,6 +5,7 @@ import {
   GetCommand,
   UpdateCommand,
   DeleteCommand,
+  QueryCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { SessionItem, SessionStatus } from '../shared/models';
 
@@ -29,6 +30,23 @@ export const createSession = async (session: SessionItem): Promise<void> => {
   );
 };
 
+export const getListSessions = async (teacherId: string): Promise<SessionItem[]> => {
+  const tableName = getTableName();
+  
+  const response = await docClient.send(
+    new QueryCommand({
+      TableName: tableName,
+      IndexName: "TeacherIdIndex",
+      KeyConditionExpression: "teacherId = :teacherId",
+      ExpressionAttributeValues: {
+        ":teacherId": teacherId,
+      },
+    })
+  ); 
+
+  return (response.Items as SessionItem[]) || [];
+};
+
 export const getSession = async (sessionId: string): Promise<SessionItem | null> => {
   const tableName = getTableName();
 
@@ -39,7 +57,7 @@ export const getSession = async (sessionId: string): Promise<SessionItem | null>
     })
   );
 
-  return (response.Item as SessionItem) || null;
+  return (response?.Item as SessionItem) || null;
 };
 
 export const updateSessionStatus = async (
