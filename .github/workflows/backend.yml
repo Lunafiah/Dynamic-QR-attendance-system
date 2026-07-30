@@ -4,7 +4,7 @@ on:
   workflow_dispatch:     
   push:
     branches:
-      - develop  # Chỉ chạy khi có code mới đẩy lên nhánh develop
+      - main  # Chỉ chạy khi có code mới đẩy lên nhánh develop
     paths:
       - 'backend/**' # Chỉ chạy khi có thay đổi trong thư mục backend
 
